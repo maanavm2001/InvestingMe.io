@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:investing_me_io/app/app_widgets/dialog_popup_widget.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:get/get.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -37,7 +38,7 @@ class _AddInvestmentPageState extends State<AddInvestmentPage> {
 
   @override
   void initState() {
-    _setDateParams();
+    _setDateParams(widget.currDate, formData['range']);
     super.initState();
   }
 
@@ -78,8 +79,10 @@ class _AddInvestmentPageState extends State<AddInvestmentPage> {
                                     FormBuilderFieldOption(
                                         value: 7, child: Text('7 Days')),
                                   ],
-                                  onChanged: (value) =>
-                                      {_setValue('range', value)}),
+                                  onChanged: (value) => {
+                                        if (value != null)
+                                          {_setValue('range', value)}
+                                      }),
                             ],
                           ),
                         ),
@@ -198,20 +201,13 @@ class _AddInvestmentPageState extends State<AddInvestmentPage> {
       formData[key] = value;
 
       if (formData['range'] == 1) {
-        dateRange = DateFormat.yMMMMd()
-            .format(Jiffy(widget.currDate).dateTime)
-            .toString();
+        _setDateRange(formData['range']);
 
         multiplier = oneDayInvstRatio[roundDown(formData['investmentAmt']!, 0)];
         formData['dates'] = oneDay;
       } else if (formData['range'] == 7) {
-        dateRange = DateFormat.yMMMMd()
-                .format(Jiffy(widget.currDate).dateTime)
-                .toString() +
-            ' - ' +
-            DateFormat.yMMMMd()
-                .format(Jiffy(widget.currDate).add(days: 6).dateTime)
-                .toString();
+        _setDateRange(formData['range']);
+
         multiplier = svnDayInvstRatio[roundDown(formData['investmentAmt']!, 0)];
         formData['dates'] = sevenDay;
       }
@@ -220,16 +216,24 @@ class _AddInvestmentPageState extends State<AddInvestmentPage> {
 
   void _createDays() async {
     formData['id'] = id;
-    var statusCode =
+    var responseBody =
         await _apiRequest.post('day', 'create', formData, auth: true);
-    if (statusCode == 200) {
-      Get.back();
+
+    if (responseBody['exists'].toString() != 'null') {
+      responseBody['exists'] = _dateFormatter(responseBody['exists']);
+    } else {
+      responseBody['exists'] = '';
     }
+    showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) =>
+            DialogContent(context, responseBody['exists']));
   }
 
-  void _setDateParams() {
+  void _setDateParams(String currDate, range) {
     oneDay = Jiffy(widget.currDate).yMd.toString().replaceAll('/', '-');
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 7; i++) {
       sevenDay.add(Jiffy(widget.currDate)
           .add(days: i)
           .yMd
@@ -237,5 +241,35 @@ class _AddInvestmentPageState extends State<AddInvestmentPage> {
           .replaceAll('/', '-'));
     }
     formData['dates'] = oneDay;
+    _setDateRange(range);
+  }
+
+  String _dateFormatter(responseBody) {
+    var existString = '';
+    for (var i in responseBody) {
+      existString +=
+          DateFormat.yMMMMd().format(Jiffy(i['date']).dateTime).toString() +
+              ' is already active.\n' +
+              r'You will not be charged $' +
+              formData["investmentAmt"].toString() +
+              '\n\n';
+    }
+    return existString;
+  }
+
+  void _setDateRange(range) {
+    if (range == 1) {
+      dateRange = DateFormat.yMMMMd()
+          .format(Jiffy(widget.currDate).dateTime)
+          .toString();
+    } else {
+      dateRange = DateFormat.yMMMMd()
+              .format(Jiffy(widget.currDate).dateTime)
+              .toString() +
+          ' - ' +
+          DateFormat.yMMMMd()
+              .format(Jiffy(widget.currDate).add(days: 6).dateTime)
+              .toString();
+    }
   }
 }

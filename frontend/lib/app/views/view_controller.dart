@@ -20,16 +20,17 @@ class ViewController extends StatefulWidget {
 
 class _ViewControllerState extends State<ViewController> {
   final ApiRequest _apiRequest = ApiRequest();
-  late bool _loaded;
+  bool get _loaded {
+    return (_currDateData != {});
+  }
+
   String _currDate = Jiffy().yMd.toString().replaceAll('/', '-');
-  late Map<String, dynamic> _currDateData;
+  Map<String, dynamic> _currDateData = {};
 
   @override
   void initState() {
-    _loaded = false;
     _getUser();
     _loadDay(_currDate);
-    _loaded = true;
     super.initState();
   }
 
@@ -100,7 +101,7 @@ class _ViewControllerState extends State<ViewController> {
   }
 
   void _getUser() async {
-    var response = await _apiRequest.getUser();
+    await _apiRequest.getUser();
     setState(() {});
   }
 

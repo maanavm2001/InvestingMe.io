@@ -28,7 +28,8 @@ class ApiRequest {
     }
   }
 
-  Future<int> post(String resource, String action, dynamic params,
+  Future<Map<String, dynamic>> post(
+      String resource, String action, dynamic params,
       {bool auth = false}) async {
     Map<String, String> isAuthHeaders = apiCallHeaders;
     String url = (API_URL + '/' + resource + '/' + action);
@@ -48,7 +49,7 @@ class ApiRequest {
       responseBody = _responseBodyProcessor(responseBody);
 
       log('Call Finished');
-      return response.statusCode;
+      return responseBody;
     } else {
       throw Exception('Error Pinging (POST): ' + url);
     }
