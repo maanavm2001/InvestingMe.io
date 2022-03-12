@@ -132,6 +132,9 @@ daysEndpoint.post('/create/', auth, async (req, res) =>  {
                 }
         });
         });
+        var exist = await Day.find({userID:decryptedId, isActive: true}).where('date').in(reqRange).select({'date':1, '_id':0});
+        responseBody['exists'] = exist;
+        console.log(responseBody)
         res.status(200).json(responseBody);
     }
 })
